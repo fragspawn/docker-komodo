@@ -1,0 +1,4 @@
+#check to see errors:
+docker logs komodo-mongo | grep -E '"s":"(F|E)"'
+#check to see actions
+docker events --filter container=komodo-mongo

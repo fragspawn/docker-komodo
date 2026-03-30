@@ -1,0 +1,22 @@
+  registry:
+    image: registry:2
+    container_name: komodo-registry
+    restart: unless-stopped
+    security_opt:
+      - label=disable
+    environment:
+      TZ: ${TZ:-Etc/UTC}
+      REGISTRY_HTTP_ADDR: 0.0.0.0:5000
+      REGISTRY_HTTP_SECRET: ${REGISTRY_HTTP_SECRET:-change_me}
+      REGISTRY_HTTP_TLS_CERTIFICATE: /certs/domain.crt
+      REGISTRY_HTTP_TLS_KEY: /certs/domain.key
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+      REGISTRY_STORAGE_DELETE_ENABLED: ${REGISTRY_STORAGE_DELETE_ENABLED:-true}
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: ${REGISTRY_AUTH_HTPASSWD_REALM:-Registry Realm}
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+    volumes:
+      - registry_data:/var/lib/registry
+      - ${REGISTRY_AUTH_HTPASSWD_FILE:-./registry/auth/htpasswd}:/auth/htpasswd:ro
+      - ${REGISTRY_TLS_CERT_FILE:-./registry/certs/domain.crt}:/certs/domain.crt:ro
+      - ${REGISTRY_TLS_KEY_FILE:-./registry/certs/domain.key}:/certs/domain.key:ro

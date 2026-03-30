@@ -1,0 +1,107 @@
+name: komodo
+services:
+  mongo:
+    image: mongo:7
+    container_name: komodo-mongo
+    command: --quiet --wiredTigerCacheSizeGB 0.25
+    restart: unless-stopped
+    volumes:
+      - mongodb:/data/db
+      - mongoconf:/data/configdb
+    healthcheck:
+      test: mongosh --quiet -u $${KOMODO_DATABASE_USERNAME} -p $${KOMODO_DATABASE_PASSWORD} --eval "db.adminCommand('ping')"
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${KOMODO_DATABASE_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${KOMODO_DATABASE_PASSWORD:-admin}
+      MONGO_INITDB_DATABASE: komodo
+  core:
+    image: ghcr.io/moghtech/komodo-core:2
+    container_name: komodo-core
+    init: true
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "9120:9120"
+    environment: 
+      TZ: ${TZ:-Etc/UTC}
+      KOMODO_HOST: ${KOMODO_HOST:-http://localhost:9120}
+      KOMODO_TITLE: ${KOMODO_TITLE:-Komodo}
+      KOMODO_DATABASE_ADDRESS: mongo:27017
+      KOMODO_DATABASE_USERNAME: ${KOMODO_DATABASE_USERNAME:-admin}
+      KOMODO_DATABASE_PASSWORD: ${KOMODO_DATABASE_PASSWORD:-admin}
+      KOMODO_LOCAL_AUTH: ${KOMODO_LOCAL_AUTH:-true}
+      KOMODO_INIT_ADMIN_USERNAME: ${KOMODO_INIT_ADMIN_USERNAME:-admin}
+      KOMODO_INIT_ADMIN_PASSWORD: ${KOMODO_INIT_ADMIN_PASSWORD:-changeme}
+      KOMODO_FIRST_SERVER_NAME: ${KOMODO_FIRST_SERVER_NAME:-Local}
+      KOMODO_PERIPHERY_PUBLIC_KEY: file:/config/keys/periphery.pub
+      KOMODO_WEBHOOK_SECRET: ${KOMODO_WEBHOOK_SECRET:-a_random_secret}
+      KOMODO_JWT_SECRET: ${KOMODO_JWT_SECRET:-a_random_jwt_secret}
+    volumes:
+      - keys:/config/keys
+      - ${COMPOSE_KOMODO_BACKUPS_PATH:-backups}:/backups
+  periphery:
+    image: ghcr.io/moghtech/komodo-periphery:2
+    container_name: komodo-periphery
+    init: true
+    restart: unless-stopped
+    security_opt:
+      - label=disable
+    depends_on:
+      - core
+    environment:
+      TZ: ${TZ:-Etc/UTC}
+      PERIPHERY_CORE_ADDRESS: ${PERIPHERY_CORE_ADDRESS:-ws://core:9120}
+      PERIPHERY_CONNECT_AS: ${PERIPHERY_CONNECT_AS:-Local}
+      PERIPHERY_CORE_PUBLIC_KEYS: file:/config/keys/core.pub
+      PERIPHERY_ROOT_DIRECTORY: ${PERIPHERY_ROOT_DIRECTORY:-/etc/komodo}
+      PERIPHERY_DISABLE_TERMINALS: ${PERIPHERY_DISABLE_TERMINALS:-false}
+      PERIPHERY_DISABLE_CONTAINER_TERMINALS: ${PERIPHERY_DISABLE_CONTAINER_TERMINALS:-false}
+      PERIPHERY_INCLUDE_DISK_MOUNTS: ${PERIPHERY_INCLUDE_DISK_MOUNTS:-/etc/hostname}
+    volumes:
+      - keys:/config/keys
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /proc:/proc
+      - ${PERIPHERY_ROOT_DIRECTORY:-/etc/komodo}:${PERIPHERY_ROOT_DIRECTORY:-/etc/komodo}
+  aws-cli:
+    image: public.ecr.aws/aws-cli/aws-cli:latest
+    container_name: komodo-aws-cli
+    #command: aws s3 sync s3://$${AWS_S3_BUCKET_NAME} /backups
+    entrypoint: sleep 5s
+    volumes:
+      - ${COMPOSE_KOMODO_BACKUPS_PATH:-backups}:/backups
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-your_access_key_id}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-your_secret_access_key}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-bucket-name}
+  cli:
+    image: ghcr.io/moghtech/komodo-cli:latest
+    container_name: komodo-cli
+    ## Optionally specify a specific folder with `--restore-folder`,
+    command: km database restore -y
+    volumes:
+      - ${COMPOSE_KOMODO_BACKUPS_PATH:-backups}:/backups
+    depends_on:
+      mongo:
+        condition: service_healthy
+      aws-cli:
+        condition: service_completed_successfully
+    environment:
+      KOMODO_CLI_DATABASE_TARGET_ADDRESS: mongo:27017
+      KOMODO_CLI_DATABASE_TARGET_USERNAME: ${KOMODO_DATABASE_USERNAME:-admin}
+      KOMODO_CLI_DATABASE_TARGET_PASSWORD: ${KOMODO_DATABASE_PASSWORD:-admin}
+      KOMODO_CLI_DATABASE_TARGET_DB_NAME: komodo
+volumes:
+  mongodb:
+  mongoconf:
+  keys:
+  backups:
