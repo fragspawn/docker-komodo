@@ -16,20 +16,20 @@ A Komodo environment to orchestrate container-based infrastructure for dev, stag
 * **Mongodb** the persistence layer containing Komodo configuration
 * **aws-cli** short lived aws-cli container that lives long enough to get komodo backup data
 * **cli** a minimal komodo CLI instance that executes to restore komodo config to mongodb then exit
-* **./bin ** folder that contains any shell scripts the node needs to manage the node
+* **./bin** folder that contains any shell scripts to manage the node
 
 ### START KOMODO
 
 run:
-```docker compose up # whilst in the project directory```
+```docker compose up```
 
 open:
 ```http://localhost:9120```
 
-This will:
+The process will:
 1. start mongodb
-2. run an AWS CLI session to populate backup info from pre-populated s3 bucket
-3. run a Komodo CLI session to restore data from step #2 data into mongodb
+2. run an AWS CLI process to sync wtih a backup in an s3 bucket
+3. run a Komodo CLI session to restore data from step #2 into mongodb
 4. start komodo web service on port 9120
 5. komodo-periphery which needs access to docker.sock of native docker daemon running this script
 
@@ -39,9 +39,9 @@ Each running instance uses docker-compose, and runs in a **komodo** namespace, i
 
 The only persistence comes from Komodo backup/restore either user-initiated via UI or API processes 
 
-The infra will do a restore of configs from the **komodo_backups** volume each time on startup (and fail if it does not exist). Users can maintain persistence by running **Schedule -> backup core database** in the web UI of Komodo (http://localhost:9120).
+The infra will do a restore of configs from the **komodo_backups** volume each time on startup (and fail if backup does not exist). Users can maintain persistence by running **Schedule -> backup core database** in the web UI of Komodo (http://localhost:9120).
 
-There are no AWS creds, but one could theoritically populate configs externally into this project. Currently the aws-cli ENTRYPOINT is set to sleep for five seconds. Comment out ENTRYPOINT with COMMAND, once the .env file has been created with an AWS credential.
+There are no AWS creds, but one could theoritically populate configs externally into this project. Currently the aws-cli ENTRYPOINT is set to sleep for five seconds. Comment out ENTRYPOINT replace with COMMAND, once the .env file has been created with an AWS credential.
 
 Clear away any persistence and start containers from scratch:
 
