@@ -5,9 +5,6 @@ services:
     container_name: komodo-mongo
     command: --quiet --wiredTigerCacheSizeGB 0.25
     restart: unless-stopped
-    volumes:
-      - mongodb:/data/db
-      - mongoconf:/data/configdb
     healthcheck:
       test: mongosh --quiet -u $${KOMODO_DATABASE_USERNAME} -p $${KOMODO_DATABASE_PASSWORD} --eval "db.adminCommand('ping')"
       interval: 1m30s
@@ -101,7 +98,5 @@ services:
       KOMODO_CLI_DATABASE_TARGET_PASSWORD: ${KOMODO_DATABASE_PASSWORD:-admin}
       KOMODO_CLI_DATABASE_TARGET_DB_NAME: komodo
 volumes:
-  mongodb:
-  mongoconf:
   keys:
   backups:

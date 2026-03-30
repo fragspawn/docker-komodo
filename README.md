@@ -1,15 +1,15 @@
-### GITOPS with KOMODO
+## GITOPS with KOMODO
 
 A Komodo environment to orchestrate container-based infrastructure for dev, staging and production environments.
 
-## GOALS
+### GOALS
 
 * This project attempts to listen on git server webhooks and detect commits, to trigger change.
 * The intent is to make a single node self-reliant in lifecycling infrastructure containers
 * The environment should run in selinux enforcing VMs (bottlerocket) where tight restrictions of OS access are in place
 * Attempt to minimise the differences in hosting dev, staging and production and architecure ARM & X86
 
-## COMPONENTS:
+### COMPONENTS:
 
 * **Komodo** a Web UI, API & CLI for orchestration of containers on a single node
 * **Periphery** is the layer that interacts with native-running docker instance on the node
@@ -18,7 +18,7 @@ A Komodo environment to orchestrate container-based infrastructure for dev, stag
 * **cli** a minimal komodo CLI instance that executes to restore komodo config to mongodb then exit
 * **./bin ** folder that contains any shell scripts the node needs to manage the node
 
-## START KOMODO
+### START KOMODO
 
 run:
 ```docker compose up # whilst in the project directory```
@@ -35,13 +35,13 @@ This will:
 
 Each running instance uses docker-compose, and runs in a **komodo** namespace, it is suggested that a different namespace be allocated infra outside this script 
 
-## Maintaing Persistence
+### Maintaing Persistence
 
-There are no AWS creds, so one can't populate configs into this project. Currently the aws-cli ENTRYPOINT is set to sleep for five seconds. Comment out ENTRYPOINT with COMMAND, once the .env file has been created with AWS credential.
+The only persistence comes from Komodo backup/restore either user-initiated via UI or API processes 
 
-Meanwhile
+The infra will do a restore of configs from the **komodo_backups** volume each time on startup (and fail if it does not exist). Users can maintain persistence by running **Schedule -> backup core database** in the web UI of Komodo (http://localhost:9120).
 
-The infra will do a restore of configs from the **komodo_backups** volume each time on startup (if it exists). Maintain persistence by running **Schedule -> backup core database** in the web UI of Komodo (http://localhost:9120).
+There are no AWS creds, but one could theoritically populate configs externally into this project. Currently the aws-cli ENTRYPOINT is set to sleep for five seconds. Comment out ENTRYPOINT with COMMAND, once the .env file has been created with an AWS credential.
 
 Clear away any persistence and start containers from scratch:
 
@@ -49,7 +49,7 @@ Clear away any persistence and start containers from scratch:
 
 Will delete all running containers and attached volumes. All config will go bye bye.
 
-## Issues
+### Issues
 mongodb v8 seems to error (segfault) Fedora 44 for reasons unknown, downgraded to v7
 
 
