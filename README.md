@@ -52,4 +52,3 @@ Will delete all running containers and attached volumes. All config will go bye 
 ### Issues
 mongodb v8 seems to error (segfault) Fedora 44 for reasons unknown, downgraded to v7
 
-
