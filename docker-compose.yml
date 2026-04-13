@@ -35,7 +35,7 @@ services:
       KOMODO_LOCAL_AUTH: ${KOMODO_LOCAL_AUTH:-true}
       KOMODO_INIT_ADMIN_USERNAME: ${KOMODO_INIT_ADMIN_USERNAME:-admin}
       KOMODO_INIT_ADMIN_PASSWORD: ${KOMODO_INIT_ADMIN_PASSWORD:-changeme}
-      KOMODO_FIRST_SERVER_NAME: ${KOMODO_FIRST_SERVER_NAME:-Local}
+      KOMODO_FIRST_SERVER_NAME: ${KOMODO_FIRST_SERVER_NAME:-staging}
       KOMODO_PERIPHERY_PUBLIC_KEY: file:/config/keys/periphery.pub
       KOMODO_WEBHOOK_SECRET: ${KOMODO_WEBHOOK_SECRET:-a_random_secret}
       KOMODO_JWT_SECRET: ${KOMODO_JWT_SECRET:-a_random_jwt_secret}
@@ -54,7 +54,7 @@ services:
     environment:
       TZ: ${TZ:-Etc/UTC}
       PERIPHERY_CORE_ADDRESS: ${PERIPHERY_CORE_ADDRESS:-ws://core:9120}
-      PERIPHERY_CONNECT_AS: ${PERIPHERY_CONNECT_AS:-Local}
+      PERIPHERY_CONNECT_AS: ${PERIPHERY_CONNECT_AS:-staging}
       PERIPHERY_CORE_PUBLIC_KEYS: file:/config/keys/core.pub
       PERIPHERY_ROOT_DIRECTORY: ${PERIPHERY_ROOT_DIRECTORY:-/etc/komodo}
       PERIPHERY_DISABLE_TERMINALS: ${PERIPHERY_DISABLE_TERMINALS:-false}
@@ -65,11 +65,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /proc:/proc
       - ${PERIPHERY_ROOT_DIRECTORY:-/etc/komodo}:${PERIPHERY_ROOT_DIRECTORY:-/etc/komodo}
-  aws-cli:
+  aws-cli-backup:
     image: public.ecr.aws/aws-cli/aws-cli:latest
-    container_name: komodo-aws-cli
-    #command: aws s3 sync s3://$${AWS_S3_BUCKET_NAME} /backups
-    entrypoint: sleep 5s
+    container_name: komodo-aws-cli-backup
+    command: s3 sync /backups s3://${AWS_S3_BUCKET_NAME} --delete
     volumes:
       - ${COMPOSE_KOMODO_BACKUPS_PATH:-backups}:/backups
     depends_on:
@@ -78,20 +77,33 @@ services:
     environment:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-your_access_key_id}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-your_secret_access_key}
-      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
-      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-bucket-name}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-ap-southeast-2}
+      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-staging-komodo}
+    working_dir: /backups
+    profiles:
+      - backup
+  aws-cli-restore:
+    image: public.ecr.aws/aws-cli/aws-cli:latest
+    container_name: komodo-aws-cli-restore
+    command: s3 sync s3://${AWS_S3_BUCKET_NAME} /backups
+    volumes:
+      - ${COMPOSE_KOMODO_BACKUPS_PATH:-backups}:/backups
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-your_access_key_id}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-your_secret_access_key}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-ap-southeast-2}
+      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-staging-komodo}
     working_dir: /backups
   cli:
     image: ghcr.io/moghtech/komodo-cli:latest
     container_name: komodo-cli
-    ## Optionally specify a specific folder with `--restore-folder`,
     command: km database restore -y
     volumes:
       - ${COMPOSE_KOMODO_BACKUPS_PATH:-backups}:/backups
     depends_on:
       mongo:
         condition: service_healthy
-      aws-cli:
+      aws-cli-restore:
         condition: service_completed_successfully
     environment:
       KOMODO_CLI_DATABASE_TARGET_ADDRESS: mongo:27017
