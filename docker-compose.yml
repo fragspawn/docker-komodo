@@ -39,6 +39,7 @@ services:
       KOMODO_PERIPHERY_PUBLIC_KEY: file:/config/keys/periphery.pub
       KOMODO_WEBHOOK_SECRET: ${KOMODO_WEBHOOK_SECRET:-a_random_secret}
       KOMODO_JWT_SECRET: ${KOMODO_JWT_SECRET:-a_random_jwt_secret}
+      KOMODO_DISABLE_USER_REGISTRATION: ${KOMODO_DISABLE_USER_REGISTRATION:-true}
     volumes:
       - keys:/config/keys
       - ${COMPOSE_KOMODO_BACKUPS_PATH:-backups}:/backups
