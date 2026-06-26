@@ -1,18 +1,18 @@
 ## GITOPS with KOMODO
 
-A Komodo environment to orchestrate container-based infrastructure for dev, staging and production environments.
+A Komodo environment to orchestrate container-based infrastructure suitable for dev, staging and production environments.
 
 ### GOALS
 
 * This project attempts to listen on git server webhooks and detect commits, to trigger infrastructure change.
 * The intent is to make a single node self-reliant in lifecycling docker compose infrastructure
-* The environment should run in selinux enforcing VMs (bottlerocket) where tight restrictions of OS access are in place
-* Attempt to minimise the differences in hosting dev, staging and production and architecure ARM & X86
+* The environment should run in selinux enforcing VMs where tight restrictions of OS access are in place
+* Attempt to minimise the differences in hosting dev, staging and production and architecures
 
 ### COMPONENTS:
 
 * **Komodo** a Web UI, API & CLI for orchestration of containers on a single node
-* **Periphery** is the layer that interacts with host-base docker instance
+* **Periphery** is the layer that interacts with host-based docker instance
 * **Mongodb** the persistence layer containing Komodo configuration
 * **aws-cli-backup** short lived aws-cli container to write to s3 bucket
 * **aws-cli-restore** short-lived aws-cli container to read from s3 bucket
